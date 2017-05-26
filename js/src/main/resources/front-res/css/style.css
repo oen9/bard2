@@ -1,0 +1,31 @@
+.icon-block {
+    padding: 0 15px;
+}
+
+.icon-block .material-icons {
+    font-size: inherit;
+}
+
+body {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+.scrollable-content {
+    min-height: 65vh;
+    max-height: 65vh;
+    overflow: auto;
+}
+
+.page-footer {
+    padding-top: 0;
+}
+
+.page-footer .footer-copyright {
+    min-height: 0;
+}
