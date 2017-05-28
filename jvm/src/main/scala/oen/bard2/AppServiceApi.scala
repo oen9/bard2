@@ -1,19 +1,29 @@
 package oen.bard2
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
+import akka.pattern._
+import akka.util.Timeout
+import oen.bard2.actors.RoomsActor
+
+import scala.concurrent.duration.DurationLong
+import scala.util.{Failure, Success}
 
 class AppServiceApi(
-  val system: ActorSystem
+  val system: ActorSystem,
+  val roomsActor: ActorRef
 ) extends AppService
 
 trait AppService {
 
-  implicit val system: ActorSystem
+  implicit def system: ActorSystem
+  def roomsActor: ActorRef
 
   val routes: Route = getStatic ~
-    getStaticDev
+    getStaticDev ~
+    roomsApi
 
   def getStatic: Route = get {
     pathSingleSlash {
@@ -38,4 +48,33 @@ trait AppService {
       getFromResource("bard2-fastopt.js.map")
     }
   }
+
+  implicit val timeout = Timeout(5.seconds)
+
+  def roomsApi: Route = get {
+    path("rooms") {
+      onComplete{
+        (roomsActor ? RoomsActor.GetRooms).mapTo[Rooms]
+      } {
+        case Success(r) => complete(HttpEntity(ContentTypes.`application/json`, Data.toJson(r)))
+        case Failure(f) => failWith(f)
+      }
+    }
+  } ~
+  post {
+    path("rooms") {
+      entity(as[String])(handleNewRoom)
+    }
+  }
+
+  protected def handleNewRoom(newRoomJson: String): Route = {
+    Data.fromJson(newRoomJson) match {
+      case cr: CreateRoom => onComplete((roomsActor ? cr).mapTo[Data]) {
+        case Success(d) => complete(HttpEntity(ContentTypes.`application/json`, Data.toJson(d)))
+        case Failure(f) => failWith(f)
+      }
+      case _ => reject()
+    }
+  }
+
 }

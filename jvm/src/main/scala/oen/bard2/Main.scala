@@ -5,12 +5,13 @@ import akka.event.Logging
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import com.typesafe.config.ConfigFactory
+import oen.bard2.actors.RoomsActor
 
 import scala.concurrent.Future
-import scala.util.{Failure, Properties, Success}
+import scala.util.{Failure, Success}
 
 object Main extends App {
-  val config = ConfigFactory.load(Properties.envOrElse("STAGE", "application"))
+  val config = ConfigFactory.load(sys.env.getOrElse("STAGE", "application"))
 
   val host = config.getString("http.host")
   val port = config.getInt("http.port")
@@ -18,7 +19,9 @@ object Main extends App {
   implicit val system = ActorSystem("bard2", config)
   implicit val materializer = ActorMaterializer()
 
-  val api = new AppServiceApi(system)
+  val roomsActor = system.actorOf(RoomsActor.props, RoomsActor.name)
+
+  val api = new AppServiceApi(system, roomsActor)
 
   val bindingFuture: Future[Http.ServerBinding] = Http().bindAndHandle(api.routes, host, port = port)
 
