@@ -16,16 +16,25 @@ class RoomsActor extends PersistentActor {
   }
 
   override def receiveCommand: Receive = {
-    case CreateRoom(r @ Room(name)) =>
-      if (roomList.exists(_.name.equalsIgnoreCase(name))) {
+    case CreateRoom(r @ Room(roomName)) =>
+      if (roomList.exists(_.name.equalsIgnoreCase(roomName))) {
        sender() ! RoomRejected(r)
       } else {
         sender() ! RoomAccepted(r)
-        persist(RoomCreated(name))(_ => newRoom(name))
+        persist(RoomCreated(roomName))(_ => newRoom(roomName))
       }
 
     case GetRooms =>
       sender() ! Rooms(roomList.map(r => Room(r.name)))
+
+    case CreateUser(roomName) =>
+      roomList
+        .find(_.name.equalsIgnoreCase(roomName))
+        .fold {
+          sender() ! RoomNotFound(Room(roomName))
+        } (roomRef => {
+          roomRef.actorRef ! RoomActor.CreateUser(sender())
+        })
   }
 
   override def persistenceId: String = "rooms"
@@ -48,6 +57,7 @@ object RoomsActor {
 
   sealed trait Cmd
   case object GetRooms extends Cmd
+  case class CreateUser(roomName: String) extends Cmd
 
   sealed trait Evt
   case class RoomCreated(name: String) extends Evt

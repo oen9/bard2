@@ -9,6 +9,9 @@ case class StaticComponents (
   newRoomButton: Anchor = a(cls := "btn-floating btn-large waves-effect waves-light", i(cls := "material-icons", "add_box")).render,
   roomSearchInput: Input = input(id := "search", `type` := "search").render,
 
+  addToPlaylistInput: Input = input(id := "add_to_playlist", `type` := "text").render,
+  addToPlaylistButton: Anchor = a(cls := "btn-floating btn-large waves-effect waves-light", i(cls := "material-icons", "playlist_add")).render,
+
   progressbar: Div = div(cls := "progress", div(cls := "indeterminate")).render,
   roomList: Div = div(cls := "collection rooms").render
 )

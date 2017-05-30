@@ -34,3 +34,11 @@ main {
 .page-footer .footer-copyright {
     min-height: 0;
 }
+
+.player {
+    resize: both;
+    overflow: auto;
+    height: 56.25vh;
+    width: 100vh;
+    margin: auto;
+}

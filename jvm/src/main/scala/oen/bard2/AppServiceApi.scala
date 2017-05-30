@@ -1,13 +1,18 @@
 package oen.bard2
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.NotUsed
+import akka.actor.{ActorRef, ActorSystem, PoisonPill}
+import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.pattern._
+import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.Timeout
-import oen.bard2.actors.RoomsActor
+import oen.bard2.actors.{RoomsActor, UserActor}
 
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationLong
 import scala.util.{Failure, Success}
 
@@ -21,9 +26,12 @@ trait AppService {
   implicit def system: ActorSystem
   def roomsActor: ActorRef
 
+  implicit val timeout = Timeout(5.seconds)
+
   val routes: Route = getStatic ~
     getStaticDev ~
-    roomsApi
+    roomsApi ~
+    websock
 
   def getStatic: Route = get {
     pathSingleSlash {
@@ -49,8 +57,6 @@ trait AppService {
     }
   }
 
-  implicit val timeout = Timeout(5.seconds)
-
   def roomsApi: Route = get {
     path("rooms") {
       onComplete{
@@ -67,6 +73,12 @@ trait AppService {
     }
   }
 
+  def websock: Route = path("websock" / Segment) { roomName =>
+    onSuccess(createUser(roomName)) (
+      handleWebSocketMessages
+    )
+  }
+
   protected def handleNewRoom(newRoomJson: String): Route = {
     Data.fromJson(newRoomJson) match {
       case cr: CreateRoom => onComplete((roomsActor ? cr).mapTo[Data]) {
@@ -75,6 +87,39 @@ trait AppService {
       }
       case _ => reject()
     }
+  }
+
+  protected def createUser(roomName: String): Future[Flow[Message, Message, NotUsed]] = {
+
+    implicit val ex = system.dispatcher
+
+    val createdUser = roomsActor ? RoomsActor.CreateUser(roomName)
+
+    createdUser.map {
+      case userActor: ActorRef =>
+        createUserFlow(userActor)
+
+      case rnf: RoomNotFound =>
+        val data = TextMessage(Data.toJson(rnf))
+        Flow.fromSinkAndSource(Sink.ignore, Source.single(data))
+    }
+  }
+
+  protected def createUserFlow(userActor: ActorRef): Flow[Message, TextMessage.Strict, NotUsed] = {
+    val inMsgFlow = Flow[Message]
+      .map {
+        case TextMessage.Strict(msgText) => Data.fromJson(msgText)
+        case _ => NotUsed
+      }.to(Sink.actorRef(userActor, PoisonPill))
+
+    val outMsgFlow = Source
+      .actorRef[Data](Int.MaxValue, OverflowStrategy.dropTail)
+      .mapMaterializedValue(outActor => {
+        userActor ! UserActor.Out(outActor)
+        NotUsed
+      }).map { data: Data => TextMessage(Data.toJson(data)) }
+
+    Flow.fromSinkAndSource(inMsgFlow, outMsgFlow)
   }
 
 }

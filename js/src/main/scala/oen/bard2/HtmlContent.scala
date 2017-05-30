@@ -1,16 +1,24 @@
 package oen.bard2
 
-import oen.bard2.components.StaticComponents
+import oen.bard2.components.{CacheData, StaticComponents}
+import oen.bard2.websock.WebsockConnector
+import oen.bard2.youtube._
 import org.scalajs.dom
 import org.scalajs.dom.html
-import org.scalajs.dom.raw.HashChangeEvent
+import org.scalajs.dom.raw.{HashChangeEvent, MouseEvent}
 
 import scalatags.JsDom.all._
 import scalatags.JsDom.tags2
 
-class HtmlContent(staticComponents: StaticComponents, ajaxHelper: AjaxHelper) {
+class HtmlContent(staticComponents: StaticComponents,
+                  ajaxHelper: AjaxHelper,
+                  playerHelper: PlayerHelper,
+                  cacheData: CacheData,
+                  websockConnector: WebsockConnector) {
 
   def init(header: html.Element, main: html.Element, footer: html.Element): Unit = {
+    readHash()
+
     val headerContent = initHeader()
     header.appendChild(headerContent)
 
@@ -20,10 +28,11 @@ class HtmlContent(staticComponents: StaticComponents, ajaxHelper: AjaxHelper) {
     val footerContent = initFooter()
     footer.appendChild(footerContent)
 
+    playerHelper.loadIframe()
+    websockConnector.reConnect()
+
     dom.window.onhashchange = (e: HashChangeEvent) => {
-      main.innerHTML = ""
-      val mainContent = initMain()
-      main.appendChild(mainContent)
+      onHashChange(main)
     }
   }
 
@@ -36,6 +45,23 @@ class HtmlContent(staticComponents: StaticComponents, ajaxHelper: AjaxHelper) {
       val roomA = a(cls := "collection-item", room.name, href := s"#${room.name}").render
       staticComponents.roomList.appendChild(roomA)
     })
+  }
+
+  protected def readHash(): Option[String] = {
+    val hash = dom.window.location.hash
+    cacheData.roomName = if (hash.isEmpty) None else Some(hash.substring(1))
+    cacheData.roomName
+  }
+
+  protected def onHashChange(main: html.Element): Unit = {
+    readHash()
+
+    main.innerHTML = ""
+    val mainContent = initMain()
+    main.appendChild(mainContent)
+
+    playerHelper.refreshPlayer()
+    websockConnector.reConnect()
   }
 
   protected def initHeader(): html.Element = {
@@ -52,8 +78,7 @@ class HtmlContent(staticComponents: StaticComponents, ajaxHelper: AjaxHelper) {
   }
 
   protected def initMain(): html.Div = {
-    val hash = dom.window.location.hash
-    if (hash.isEmpty) enterPoint() else room(hash.substring(1))
+    cacheData.roomName.fold(enterPoint())(room)
   }
 
   protected def initFooter(): html.Div = {
@@ -98,15 +123,44 @@ class HtmlContent(staticComponents: StaticComponents, ajaxHelper: AjaxHelper) {
   }
 
   protected def room(hash: String): html.Div = {
-    div(cls := "row center",
-      div(cls := "col s1 m6 l6",
-        div(cls := " grey lighten-4 container",
-          h1(hash)
+    val playButton = a(cls := "btn-floating btn-large waves-effect waves-light", i(cls := "material-icons", "play_arrow")).render
+    playButton.onclick = (_: MouseEvent) => playerHelper.player.foreach(p => {
+      p.cueVideoById("aatr_2MstrI", 0)
+      p.playVideo()
+    })
+
+    val stopButton = a(cls := "btn-floating btn-large waves-effect waves-light", i(cls := "material-icons", "stop")).render
+    stopButton.onclick = (_: MouseEvent) => playerHelper.player.foreach(p => {
+      p.cueVideoById("aatr_2MstrI", 0)
+      p.stopVideo()
+    })
+
+    div(
+      div(cls := "row center",
+        div(cls := "col s12 m12 l12",
+          div(cls := " grey lighten-4 player",
+            div(id := "player")
+          )
         )
       ),
-      div(cls := "col s1 m6 l6",
-        div(cls := " grey lighten-4 container",
-          h1(hash)
+      div(cls := "row center",
+        div(cls := "col s12 m6 l6",
+          div(cls := " grey lighten-4",
+            h4(s"$hash"),
+            playButton, stopButton
+          )
+        ),
+        div(cls := "col s12 m6 l6",
+          div(cls := " grey lighten-4",
+            h4("add to playlist"),
+            div(cls := "row",
+              div(cls := "col s12 m11 l11 input-field",
+                staticComponents.addToPlaylistInput,
+                label(`for` := "add_to_playlist", "yt hash")
+              ),
+              div(cls := "col s12 m1 l1", staticComponents.addToPlaylistButton)
+            )
+          )
         )
       )
     ).render

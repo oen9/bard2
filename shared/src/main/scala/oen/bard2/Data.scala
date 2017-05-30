@@ -10,6 +10,9 @@ sealed trait Data
 @key("delete-room") case class DeleteRoom(room: Room) extends Data
 @key("room-accepted") case class RoomAccepted(room: Room) extends Data
 @key("room-rejected") case class RoomRejected(room: Room) extends Data
+@key("room-not-found") case class RoomNotFound(room: Room) extends Data
+
+@key("ping") case object Ping extends Data
 
 object Data {
   def toJson(data: Data): String = {
