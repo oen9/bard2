@@ -3,7 +3,13 @@ package oen.bard2.youtube
 import scala.scalajs.js
 
 class PlayerHelper {
-  var player: Option[Player] = None
+  protected var _player: Option[Player] = None
+
+  def player = _player
+
+  protected def player_=(player: Option[Player]) {
+    _player = player
+  }
 
   def loadIframe(): Unit = {
     val tag = org.scalajs.dom.document.createElement("script").asInstanceOf[org.scalajs.dom.html.Script]

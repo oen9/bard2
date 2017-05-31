@@ -1,6 +1,6 @@
 package oen.bard2.websock
 
-import oen.bard2.{Data, Ping, RoomNotFound}
+import oen.bard2.{Data, GetPlaylist, Ping, RoomNotFound}
 import oen.bard2.components.CacheData
 import org.scalajs.dom
 import org.scalajs.dom.{CloseEvent, Event, WebSocket}
@@ -22,7 +22,8 @@ class WebsockConnector(cacheData: CacheData, messageHandler: MessageHandler) {
       websock = Some(socket)
 
       socket.onopen = (_: Event) => {
-        pingIntervalId = Some(dom.window.setInterval(() => { socket.send(Data.toJson(Ping)) }, 3000))
+        pingIntervalId = Some(dom.window.setInterval(() => { socket.send(Data.toJson(Ping)) }, 30000))
+        send(GetPlaylist)
       }
 
       socket.onclose = (_: CloseEvent) => {
@@ -37,7 +38,7 @@ class WebsockConnector(cacheData: CacheData, messageHandler: MessageHandler) {
             println(s"Room ${rnf.room.name} not found. Closing connection.")
             close()
           case msg =>
-            messageHandler.handle(msg)
+            messageHandler.handle(msg, send)
         }
       }
 

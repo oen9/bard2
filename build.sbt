@@ -21,6 +21,8 @@ val app = crossProject.in(file(".")).settings(
     "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
     "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
 
+    "com.typesafe.akka" %% "akka-http-spray-json" % "10.0.7",
+
     "com.github.romix.akka" %% "akka-kryo-serialization" % "0.5.2",
 
     "org.iq80.leveldb" % "leveldb" % "0.7",

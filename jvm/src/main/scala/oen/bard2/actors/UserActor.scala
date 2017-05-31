@@ -1,10 +1,10 @@
 package oen.bard2.actors
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import oen.bard2.Ping
-import oen.bard2.actors.UserActor.Out
+import oen.bard2.{Data, Ping}
+import oen.bard2.actors.UserActor.{Out, ToOut}
 
-class UserActor extends Actor with ActorLogging {
+class UserActor(roomActor: ActorRef) extends Actor with ActorLogging {
 
   override def receive: Receive = emptyActor
 
@@ -13,6 +13,14 @@ class UserActor extends Actor with ActorLogging {
   }
 
   def handlingMessages(out: ActorRef): Receive = {
+    case toOut: ToOut =>
+      out ! toOut.data
+
+    case Ping =>
+
+    case d: Data =>
+      roomActor ! d
+
     case e => // TODO
       log.info(e.toString)
       out ! Ping
@@ -20,7 +28,8 @@ class UserActor extends Actor with ActorLogging {
 }
 
 object UserActor {
-  def props = Props(new UserActor)
+  def props(roomActor: ActorRef) = Props(new UserActor(roomActor))
 
   case class Out(out: ActorRef)
+  case class ToOut(data: Data)
 }

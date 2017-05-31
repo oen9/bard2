@@ -27,6 +27,12 @@ main {
     overflow: auto;
 }
 
+.playlist {
+    min-height: 35vh;
+    max-height: 100vh;
+    overflow: auto;
+}
+
 .page-footer {
     padding-top: 0;
 }
@@ -41,4 +47,9 @@ main {
     height: 56.25vh;
     width: 100vh;
     margin: auto;
+}
+
+.yt-thumbnai {
+    vertical-align: middle;
+    height: 75px;
 }

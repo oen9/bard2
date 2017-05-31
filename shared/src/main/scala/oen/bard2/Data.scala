@@ -12,6 +12,11 @@ sealed trait Data
 @key("room-rejected") case class RoomRejected(room: Room) extends Data
 @key("room-not-found") case class RoomNotFound(room: Room) extends Data
 
+@key("playlist") case class Playlist(playlist: Vector[PlaylistPosition]) extends Data
+@key("playlist-position") case class PlaylistPosition(ytHash: String, title: String, duration: String) extends Data
+@key("add-to-playlist") case class AddToPlaylist(ytHash: String) extends Data
+@key("get-playlist") case object GetPlaylist extends Data
+
 @key("ping") case object Ping extends Data
 
 object Data {

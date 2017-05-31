@@ -12,6 +12,8 @@ case class StaticComponents (
   addToPlaylistInput: Input = input(id := "add_to_playlist", `type` := "text").render,
   addToPlaylistButton: Anchor = a(cls := "btn-floating btn-large waves-effect waves-light", i(cls := "material-icons", "playlist_add")).render,
 
+  playlist: Div = div(cls := "collection playlist").render,
+
   progressbar: Div = div(cls := "progress", div(cls := "indeterminate")).render,
   roomList: Div = div(cls := "collection rooms").render
 )

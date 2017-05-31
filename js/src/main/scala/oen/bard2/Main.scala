@@ -1,9 +1,10 @@
 package oen.bard2
 
 import oen.bard2.components.{CacheData, ComponentsLogic, StaticComponents}
+import oen.bard2.html.{HtmlContent, HtmlDresser}
 import oen.bard2.websock.{MessageHandler, WebsockConnector}
 import oen.bard2.youtube.PlayerHelper
-import org.scalajs.dom.html
+import org.scalajs.dom.html.Element
 
 import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
 
@@ -11,19 +12,19 @@ import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
 object Main {
 
   @JSExport
-  def main(header: html.Element, main: html.Element, footer: html.Element): Unit = {
-
-    lazy val cacheData = new CacheData
-    lazy val ajaxHelper = new AjaxHelper(cacheData)
-
-    lazy val messageHandler = new MessageHandler
-    lazy val websockConnector = new WebsockConnector(cacheData, messageHandler)
-
+  def main(header: Element, main: Element, footer: Element): Unit = {
     lazy val staticComponents = StaticComponents()
     lazy val playerHelper = new PlayerHelper
+    lazy val cacheData = new CacheData
+
+    lazy val htmlDresser = new HtmlDresser(playerHelper)
+    lazy val messageHandler = new MessageHandler(htmlDresser, staticComponents, playerHelper)
+    lazy val websockConnector = new WebsockConnector(cacheData, messageHandler)
+
+    lazy val ajaxHelper = new AjaxHelper(cacheData)
     lazy val htmlContent = new HtmlContent(staticComponents, ajaxHelper, playerHelper, cacheData, websockConnector)
 
-    lazy val componentsLogic = new ComponentsLogic(staticComponents, cacheData, ajaxHelper, htmlContent)
+    lazy val componentsLogic = new ComponentsLogic(staticComponents, cacheData, ajaxHelper, htmlContent, websockConnector)
 
     htmlContent.init(header, main, footer)
     componentsLogic.init()

@@ -40,7 +40,7 @@ class RoomsActor extends PersistentActor {
   override def persistenceId: String = "rooms"
 
   def newRoom(name: String): Unit = {
-    val actorRef = context.actorOf(RoomActor.props)
+    val actorRef = context.actorOf(RoomActor.props(name))
     val roomRef = RoomRef(name, actorRef)
 
     roomList = roomList + roomRef

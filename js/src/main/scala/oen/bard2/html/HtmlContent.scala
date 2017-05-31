@@ -1,8 +1,9 @@
-package oen.bard2
+package oen.bard2.html
 
 import oen.bard2.components.{CacheData, StaticComponents}
 import oen.bard2.websock.WebsockConnector
 import oen.bard2.youtube._
+import oen.bard2.{AjaxHelper, JsUtils, Room}
 import org.scalajs.dom
 import org.scalajs.dom.html
 import org.scalajs.dom.raw.{HashChangeEvent, MouseEvent}
@@ -123,15 +124,8 @@ class HtmlContent(staticComponents: StaticComponents,
   }
 
   protected def room(hash: String): html.Div = {
-    val playButton = a(cls := "btn-floating btn-large waves-effect waves-light", i(cls := "material-icons", "play_arrow")).render
-    playButton.onclick = (_: MouseEvent) => playerHelper.player.foreach(p => {
-      p.cueVideoById("aatr_2MstrI", 0)
-      p.playVideo()
-    })
-
     val stopButton = a(cls := "btn-floating btn-large waves-effect waves-light", i(cls := "material-icons", "stop")).render
     stopButton.onclick = (_: MouseEvent) => playerHelper.player.foreach(p => {
-      p.cueVideoById("aatr_2MstrI", 0)
       p.stopVideo()
     })
 
@@ -147,7 +141,8 @@ class HtmlContent(staticComponents: StaticComponents,
         div(cls := "col s12 m6 l6",
           div(cls := " grey lighten-4",
             h4(s"$hash"),
-            playButton, stopButton
+            stopButton,
+            staticComponents.playlist
           )
         ),
         div(cls := "col s12 m6 l6",
