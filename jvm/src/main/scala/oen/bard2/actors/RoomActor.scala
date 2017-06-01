@@ -7,7 +7,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.persistence.PersistentActor
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import oen.bard2._
-import oen.bard2.actors.RoomActor.{AddedToPlaylist, CreateUser, RoomState}
+import oen.bard2.actors.RoomActor.{AddedToPlaylist, CreateUser, DeletedFromPlaylist, RoomState}
 import oen.bard2.youtube.Video
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -28,12 +28,15 @@ class RoomActor(roomName: String) extends PersistentActor with ActorLogging {
 
   override def receiveRecover: Receive = {
     case atp: AddedToPlaylist =>
-      handleNewPlaylistPosition(atp.playlistPosition)
+      updatePlaylist(atp.playlistPosition)
+
+    case dfp: DeletedFromPlaylist =>
+      updatePlaylist(dfp.deleteFromPlaylist)
 
     case RoomState(pl) =>
-      pl.foreach(handleNewPlaylistPosition)
+      pl.foreach(updatePlaylist)
 
-    case e => println(e)
+    case e => log.info("{}: {}", roomName, e)
   }
 
   override def receiveCommand: Receive = {
@@ -50,7 +53,10 @@ class RoomActor(roomName: String) extends PersistentActor with ActorLogging {
       fetchVideoInfo(ytHash)
 
     case pp: PlaylistPosition =>
-      persistAsync(AddedToPlaylist(pp))(atp => handleNewPlaylistPosition(atp.playlistPosition))
+      persistAsync(AddedToPlaylist(pp))(atp => updatePlaylist(atp.playlistPosition))
+
+    case toDelete: DeleteFromPlaylist =>
+      persistAsync(DeletedFromPlaylist(toDelete))(dfp => updatePlaylist(dfp.deleteFromPlaylist))
 
     case Terminated(terminated) =>
       users = users - terminated
@@ -59,10 +65,23 @@ class RoomActor(roomName: String) extends PersistentActor with ActorLogging {
       log.info(e.toString)  // TODO
   }
 
-  def handleNewPlaylistPosition(pp: PlaylistPosition) = {
-    playlist = playlist :+  pp
-    users.foreach(_ ! UserActor.ToOut(pp))
+  def updatePlaylist(data: Data) = {
+    data match {
+      case pp: PlaylistPosition =>
+        playlist = playlist :+  pp
 
+      case DeleteFromPlaylist(ytHash, index) =>
+        playlist
+          .lift(index)
+          .filter(_.ytHash == ytHash)
+          .foreach(_ => {
+            playlist = playlist.take(index) ++ playlist.drop(index + 1)
+          })
+
+      case unexpected => log.info("Unexpected message {}", unexpected)
+    }
+
+    users.foreach(_ ! UserActor.ToOut(data))
     if (lastSequenceNr % snapshotInterval == 0 && lastSequenceNr != 0)
       saveSnapshot(RoomState(playlist))
   }
@@ -92,6 +111,7 @@ object RoomActor {
 
   sealed trait Evt
   case class AddedToPlaylist(playlistPosition: PlaylistPosition) extends Evt
+  case class DeletedFromPlaylist(deleteFromPlaylist: DeleteFromPlaylist) extends Evt
   case class RoomState(playlist: Vector[PlaylistPosition]) extends Evt
 
   val SYNCHRO_MARGIN: FiniteDuration = 2 seconds

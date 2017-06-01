@@ -18,7 +18,7 @@ object Main {
     lazy val cacheData = new CacheData
 
     lazy val htmlDresser = new HtmlDresser(playerHelper)
-    lazy val messageHandler = new MessageHandler(htmlDresser, staticComponents, playerHelper)
+    lazy val messageHandler = new MessageHandler(htmlDresser, staticComponents, playerHelper, cacheData)
     lazy val websockConnector = new WebsockConnector(cacheData, messageHandler)
 
     lazy val ajaxHelper = new AjaxHelper(cacheData)
