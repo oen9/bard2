@@ -58,6 +58,12 @@ class RoomActor(roomName: String) extends PersistentActor with ActorLogging {
     case toDelete: DeleteFromPlaylist =>
       persistAsync(DeletedFromPlaylist(toDelete))(dfp => updatePlaylist(dfp.deleteFromPlaylist))
 
+    case p: Play =>
+      users.foreach(_ ! UserActor.ToOut(p))
+
+    case Pause =>
+      users.foreach(_ ! UserActor.ToOut(Pause))
+
     case Terminated(terminated) =>
       users = users - terminated
 

@@ -178,7 +178,7 @@ class Player protected() extends js.Object {
   // 2 – paused
   // 3 – buffering
   // 5 – video cued
-  def getPlayerState(): Double = js.native
+  def getPlayerState(): Int = js.native
 
   def getCurrentTime(): Double = js.native
 

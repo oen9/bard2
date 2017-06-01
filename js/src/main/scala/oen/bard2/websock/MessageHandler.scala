@@ -1,9 +1,9 @@
 package oen.bard2.websock
 
-import oen.bard2.components.{CacheData, StaticComponents}
+import oen.bard2.components.{CacheData, Playing, StaticComponents}
 import oen.bard2.html.HtmlDresser
 import oen.bard2.youtube.PlayerHelper
-import oen.bard2.{Data, DeleteFromPlaylist, Playlist, PlaylistPosition}
+import oen.bard2._
 
 class MessageHandler(htmlDresser: HtmlDresser,
                      staticComponents: StaticComponents,
@@ -17,6 +17,10 @@ class MessageHandler(htmlDresser: HtmlDresser,
         refreshPlaylist(send)
 
       case DeleteFromPlaylist(ytHash, index) =>
+        for { p <- cacheData.playing if p.index == index } {
+          cacheData.playing = None
+          playerHelper.stop()
+        }
         cacheData.playlist = cacheData.playlist.take(index) ++ cacheData.playlist.drop(index + 1)
         refreshPlaylist(send)
 
@@ -24,6 +28,15 @@ class MessageHandler(htmlDresser: HtmlDresser,
         val ppDressed = htmlDresser.dressPlaylistPosition(pp, cacheData.playlist.size, send)
         staticComponents.playlist.appendChild(ppDressed)
         cacheData.playlist = cacheData.playlist :+ pp
+
+      case Play(index, startSeconds) =>
+        cacheData.playlist.lift(index).foreach(p => {
+          playerHelper.play(p.ytHash, startSeconds)
+          cacheData.playing = Some(Playing(index))
+        })
+
+      case Pause =>
+        playerHelper.pause()
 
       case unhandled => println(data) // TODO
     }

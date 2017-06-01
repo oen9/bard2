@@ -1,15 +1,16 @@
 package oen.bard2.youtube
 
+import oen.bard2.components.CacheData
+import oen.bard2.{Data, Pause, Play}
+
 import scala.scalajs.js
 
-class PlayerHelper {
-  protected var _player: Option[Player] = None
+class PlayerHelper(cacheData: CacheData) {
 
-  def player = _player
+  protected var player: Option[Player] = None
+  protected var ignorePlayEvent = false
 
-  protected def player_=(player: Option[Player]) {
-    _player = player
-  }
+  var send: Option[Data => Unit] = None
 
   def loadIframe(): Unit = {
     val tag = org.scalajs.dom.document.createElement("script").asInstanceOf[org.scalajs.dom.html.Script]
@@ -28,12 +29,61 @@ class PlayerHelper {
       height = "95%",
       videoId = "",
       events = PlayerEvents(
-        onStateChange = (e: Event) => {}
+        onStateChange = onStateChange(_)
       )
     ))
     player = Some(newPlayer)
 
     newPlayer
+  }
+
+  def play(ytHash: String, startSeconds: Double) = {
+    player.foreach(p => {
+      p.cueVideoById(ytHash, startSeconds)
+      p.playVideo()
+      ignorePlayEvent = true
+    })
+  }
+
+  def stop() = {
+    player.foreach(_.stopVideo())
+  }
+
+  def pause() = {
+
+    for { p <- player if p.getPlayerState() != Player.State.PAUSED } {
+      p.pauseVideo()
+      ignorePlayEvent = true
+    }
+  }
+
+  protected def onStateChange(e: Event) = {
+
+    def onPlaying() = {
+      if (ignorePlayEvent) {
+        ignorePlayEvent = false
+      } else {
+        for { playing <- cacheData.playing
+              pl <- player
+              snd <- send } {
+          snd(Play(playing.index, pl.getCurrentTime()))
+        }
+      }
+    }
+
+    def onPaused() = {
+      if (ignorePlayEvent) {
+        ignorePlayEvent = false
+      } else {
+        send.foreach(snd => snd(Pause))
+      }
+    }
+
+    e.data.map(_.toString.toInt).foreach {
+      case Player.State.PLAYING => onPlaying()
+      case Player.State.PAUSED => onPaused()
+      case _ => // ignored
+    }
   }
 
 }

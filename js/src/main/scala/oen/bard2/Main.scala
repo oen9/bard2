@@ -14,12 +14,13 @@ object Main {
   @JSExport
   def main(header: Element, main: Element, footer: Element): Unit = {
     lazy val staticComponents = StaticComponents()
-    lazy val playerHelper = new PlayerHelper
     lazy val cacheData = new CacheData
+    lazy val playerHelper = new PlayerHelper(cacheData)
 
-    lazy val htmlDresser = new HtmlDresser(playerHelper)
+    lazy val htmlDresser = new HtmlDresser
     lazy val messageHandler = new MessageHandler(htmlDresser, staticComponents, playerHelper, cacheData)
     lazy val websockConnector = new WebsockConnector(cacheData, messageHandler)
+    playerHelper.send = Some(websockConnector.send)
 
     lazy val ajaxHelper = new AjaxHelper(cacheData)
     lazy val htmlContent = new HtmlContent(staticComponents, ajaxHelper, playerHelper, cacheData, websockConnector)

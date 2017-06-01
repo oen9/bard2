@@ -124,11 +124,6 @@ class HtmlContent(staticComponents: StaticComponents,
   }
 
   protected def room(hash: String): html.Div = {
-    val stopButton = a(cls := "btn-floating btn-large waves-effect waves-light", i(cls := "material-icons", "stop")).render
-    stopButton.onclick = (_: MouseEvent) => playerHelper.player.foreach(p => {
-      p.stopVideo()
-    })
-
     div(
       div(cls := "row center",
         div(cls := "col s12 m12 l12",
@@ -141,7 +136,6 @@ class HtmlContent(staticComponents: StaticComponents,
         div(cls := "col s12 m6 l6",
           div(cls := " grey lighten-4",
             h4(s"$hash"),
-            stopButton,
             staticComponents.playlist
           )
         ),

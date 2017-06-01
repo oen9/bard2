@@ -18,6 +18,9 @@ sealed trait Data
 @key("delete-from-playlist") case class DeleteFromPlaylist(ytHash: String, index: Int) extends Data
 @key("get-playlist") case object GetPlaylist extends Data
 
+@key("play") case class Play(index: Int, startSeconds: Double = 0) extends Data
+@key("pause") case object Pause extends Data
+
 @key("ping") case object Ping extends Data
 
 object Data {

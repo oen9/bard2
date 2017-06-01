@@ -1,22 +1,16 @@
 package oen.bard2.html
 
-import oen.bard2.youtube.PlayerHelper
-import oen.bard2.{Data, DeleteFromPlaylist, PlaylistPosition}
+import oen.bard2.{Data, DeleteFromPlaylist, Play, PlaylistPosition}
 import org.scalajs.dom.html.Div
 import org.scalajs.dom.raw.MouseEvent
 
 import scalatags.JsDom.all._
 
-class HtmlDresser(
-                 playerHelper: PlayerHelper // TODO only for test
-                 ) {
+class HtmlDresser {
   def dressPlaylistPosition(playlistPosition: PlaylistPosition, index: Int, send: Data => Unit): Div = {
 
     val playButton = a(cls := "btn-floating btn waves-effect waves-light", i(cls := "material-icons", "play_arrow")).render
-    playButton.onclick = (_: MouseEvent) => playerHelper.player.foreach(p => {
-      p.cueVideoById(playlistPosition.ytHash, 0)
-      p.playVideo()
-    })
+    playButton.onclick = (_: MouseEvent) => send(Play(index))
 
     val deleteButton = a(cls := "btn-floating btn waves-effect waves-light", i(cls := "material-icons", "delete_forever")).render
     deleteButton.onclick = (_: MouseEvent) => {
