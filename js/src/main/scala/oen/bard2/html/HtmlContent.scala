@@ -106,7 +106,7 @@ class HtmlContent(staticComponents: StaticComponents,
             label(`for` := "new_room_name", "new room name")
           ),
           div(cls := "col s1",
-            a(cls := "btn-floating btn-large waves-effect waves-light", i(cls := "material-icons", "add_box"))
+            staticComponents.newRoomButton
           )
         ),
 
