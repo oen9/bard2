@@ -39,9 +39,15 @@ class PlayerHelper(cacheData: CacheData) {
 
   def play(ytHash: String, startSeconds: Double) = {
     player.foreach(p => {
-      p.cueVideoById(ytHash, startSeconds)
+
+      if (cacheData.playing.exists(p => cacheData.playlist(p.index).ytHash == ytHash)) {
+        p.seekTo(startSeconds, allowSeekAhead = true)
+      } else {
+        p.cueVideoById(ytHash, startSeconds)
+      }
       p.playVideo()
       ignorePlayEvent = true
+
     })
   }
 

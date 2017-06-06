@@ -10,7 +10,7 @@ val app = crossProject.in(file(".")).settings(
   name := "bard2"
 ).jsSettings(
   libraryDependencies ++= Seq(
-    "org.scala-js" %%% "scalajs-dom" % "0.9.1",
+    "org.scala-js" %%% "scalajs-dom" % "0.9.2",
     "be.doeraene" %%% "scalajs-jquery" % "0.9.1"
   )
 ).jvmSettings(

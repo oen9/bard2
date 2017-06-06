@@ -7,10 +7,11 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.persistence.PersistentActor
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import oen.bard2._
-import oen.bard2.actors.RoomActor.{AddedToPlaylist, CreateUser, DeletedFromPlaylist, RoomState}
+import oen.bard2.actors.RoomActor._
 import oen.bard2.youtube.Video
+import org.joda.time.DateTime
 
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 
 class RoomActor(roomName: String) extends PersistentActor with ActorLogging {
 
@@ -18,7 +19,7 @@ class RoomActor(roomName: String) extends PersistentActor with ActorLogging {
 
   var users: Set[ActorRef] = Set()
   var playlist: Vector[PlaylistPosition] = Vector()
-  var videoCounter: Option[Cancellable] = None
+  var videoCounter: Option[VideoCounter] = None
 
   val youtubeApiKey: String = context.system.settings.config.getString("youtube.api.key")
   val videoUrl = s"""https://www.googleapis.com/youtube/v3/videos?id=%s&key=$youtubeApiKey&part=contentDetails,snippet"""
@@ -59,10 +60,17 @@ class RoomActor(roomName: String) extends PersistentActor with ActorLogging {
       persistAsync(DeletedFromPlaylist(toDelete))(dfp => updatePlaylist(dfp.deleteFromPlaylist))
 
     case p: Play =>
-      users.foreach(_ ! UserActor.ToOut(p))
+      if (p.index >= 0 && p.index < playlist.size) {
+        users.foreach(_ ! UserActor.ToOut(p))
+        play(p)
+      }
 
     case Pause =>
       users.foreach(_ ! UserActor.ToOut(Pause))
+      videoCounter.foreach(_.cancellable.cancel())
+
+    case ve: VideoEnded =>
+      videoCounter.filter(_.videoEnded == ve).foreach(_ => playNext())
 
     case Terminated(terminated) =>
       users = users - terminated
@@ -99,15 +107,50 @@ class RoomActor(roomName: String) extends PersistentActor with ActorLogging {
     import akka.pattern._
     import context.dispatcher
 
-    Http(context.system)
-      .singleRequest(HttpRequest(uri = url))
-      .flatMap(httpR => Unmarshal(httpR.entity).to[Video])
-      .map(v => v.items.headOption)
-      .map(oi => oi.map(i => PlaylistPosition(ytHash, i.snippet.title, i.contentDetails.duration)))
-      .filter(_.isDefined)
-      .map(o => o.get)
-      .pipeTo(self)
+    (for {
+      httpRequest <- Http(context.system).singleRequest(HttpRequest(uri = url))
+      video <- Unmarshal(httpRequest.entity).to[Video]
+      if video.items.nonEmpty
+    } yield {
+      val item = video.items.head
+      val duration = java.time.Duration.parse(item.contentDetails.duration).getSeconds
+      PlaylistPosition(ytHash, item.snippet.title, duration)
+    }).pipeTo(self)
   }
+
+  def playNext(): Unit = {
+    if (playlist.nonEmpty) {
+      val predictedVid = videoCounter.map(_.vid + 1).getOrElse(0)
+      val nextVid = playlist.lift(predictedVid).map(_ => predictedVid).getOrElse(0)
+
+      val p = Play(nextVid)
+      users.foreach(_ ! UserActor.ToOut(p))
+
+      play(p)
+    }
+  }
+
+  def play(p: Play): Unit = {
+    videoCounter.foreach(_.cancellable.cancel())
+
+    val playlistPosition = playlist(p.index)
+    val duration = Duration(playlistPosition.duration, concurrent.duration.SECONDS).plus(SYNCHRO_MARGIN)
+
+    val ve = VideoEnded()
+
+    implicit val ex = context.system.dispatcher
+
+    val vc = VideoCounter(
+      p.index,
+      p.startSeconds,
+      DateTime.now(),
+      context.system.scheduler.scheduleOnce(duration, self, ve),
+      ve
+    )
+
+    videoCounter = Some(vc)
+  }
+
 }
 
 object RoomActor {
@@ -121,4 +164,10 @@ object RoomActor {
   case class RoomState(playlist: Vector[PlaylistPosition]) extends Evt
 
   val SYNCHRO_MARGIN: FiniteDuration = 2 seconds
+  case class VideoCounter(vid: Int,
+                          startSeconds: Double,
+                          startDateTime: DateTime,
+                          cancellable: Cancellable,
+                          videoEnded: VideoEnded)
+  case class VideoEnded(uuid: String = java.util.UUID.randomUUID().toString)
 }
