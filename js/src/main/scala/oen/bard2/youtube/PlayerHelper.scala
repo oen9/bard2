@@ -1,16 +1,22 @@
 package oen.bard2.youtube
 
 import oen.bard2.components.CacheData
+import oen.bard2.youtube.PlayerHelper.{Cmd, PauseCmd, PlayCmd, StopCmd}
 import oen.bard2.{Data, Pause, Play}
 
 import scala.scalajs.js
 
 class PlayerHelper(cacheData: CacheData) {
 
+  var send: Option[Data => Unit] = None
+
   protected var player: Option[Player] = None
   protected var ignorePlayEvent = false
 
-  var send: Option[Data => Unit] = None
+  protected var ready = false
+  protected var notReadyBuffer: Vector[Cmd] = Vector()
+
+  protected var loadedYtHash: Option[String] = None
 
   def loadIframe(): Unit = {
     val tag = org.scalajs.dom.document.createElement("script").asInstanceOf[org.scalajs.dom.html.Script]
@@ -24,40 +30,42 @@ class PlayerHelper(cacheData: CacheData) {
   }
 
   def refreshPlayer(): Player = {
+    ready = false
+
     val newPlayer = new Player("player", PlayerOptions(
       width = "95%",
       height = "95%",
       videoId = "",
       events = PlayerEvents(
+        onReady = onReady(_),
         onStateChange = onStateChange(_)
       )
     ))
     player = Some(newPlayer)
+    loadedYtHash = None
 
     newPlayer
   }
 
-  def play(ytHash: String, startSeconds: Double) = {
+  def play(ytHash: String, startSeconds: Double) = handleReady(PlayCmd(ytHash, startSeconds)) {
     player.foreach(p => {
-
-      if (cacheData.playing.exists(p => cacheData.playlist(p.index).ytHash == ytHash)) {
+      if (loadedYtHash.contains(ytHash)) {
         p.seekTo(startSeconds, allowSeekAhead = true)
       } else {
         p.cueVideoById(ytHash, startSeconds)
+        loadedYtHash = Some(ytHash)
       }
       p.playVideo()
       ignorePlayEvent = true
-
     })
   }
 
-  def stop() = {
+  def stop() = handleReady(StopCmd) {
     player.foreach(_.stopVideo())
   }
 
-  def pause() = {
-
-    for { p <- player if p.getPlayerState() != Player.State.PAUSED } {
+  def pause() = handleReady(PauseCmd) {
+    for (p <- player if p.getPlayerState() != Player.State.PAUSED) {
       p.pauseVideo()
       ignorePlayEvent = true
     }
@@ -92,4 +100,31 @@ class PlayerHelper(cacheData: CacheData) {
     }
   }
 
+  protected def onReady(e: Event) = {
+    ready = true
+
+    for (cmd <- notReadyBuffer) {
+      cmd match {
+        case PlayCmd(ytHash, startSeconds) => play(ytHash, startSeconds)
+        case PauseCmd =>
+          pause()
+          ignorePlayEvent = false // trust me
+        case StopCmd => stop()
+      }
+    }
+
+    notReadyBuffer = Vector()
+  }
+
+  protected def handleReady(cmd: Cmd)(f: => Unit) = {
+    if (ready) f else notReadyBuffer = notReadyBuffer :+ cmd
+  }
+
+}
+
+object PlayerHelper {
+  sealed trait Cmd
+  case class PlayCmd(ytHash: String, startSeconds: Double) extends Cmd
+  case object PauseCmd extends Cmd
+  case object StopCmd extends Cmd
 }

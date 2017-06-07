@@ -9,7 +9,7 @@ import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import oen.bard2._
 import oen.bard2.actors.RoomActor._
 import oen.bard2.youtube.Video
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, Seconds}
 
 import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
 
@@ -20,6 +20,7 @@ class RoomActor(roomName: String) extends PersistentActor with ActorLogging {
   var users: Set[ActorRef] = Set()
   var playlist: Vector[PlaylistPosition] = Vector()
   var videoCounter: Option[VideoCounter] = None
+  var pausedAt: Option[Double] = None
 
   val youtubeApiKey: String = context.system.settings.config.getString("youtube.api.key")
   val videoUrl = s"""https://www.googleapis.com/youtube/v3/videos?id=%s&key=$youtubeApiKey&part=contentDetails,snippet"""
@@ -49,6 +50,7 @@ class RoomActor(roomName: String) extends PersistentActor with ActorLogging {
 
     case GetPlaylist =>
       sender() ! UserActor.ToOut(Playlist(playlist))
+      handleInitialState(sender())
 
     case AddToPlaylist(ytHash) =>
       fetchVideoInfo(ytHash)
@@ -63,11 +65,13 @@ class RoomActor(roomName: String) extends PersistentActor with ActorLogging {
       if (p.index >= 0 && p.index < playlist.size) {
         users.foreach(_ ! UserActor.ToOut(p))
         play(p)
+        pausedAt = None
       }
 
     case Pause =>
       users.foreach(_ ! UserActor.ToOut(Pause))
       videoCounter.foreach(_.cancellable.cancel())
+      pausedAt = Some(countCurrentVidTime())
 
     case ve: VideoEnded =>
       videoCounter.filter(_.videoEnded == ve).foreach(_ => playNext())
@@ -88,9 +92,9 @@ class RoomActor(roomName: String) extends PersistentActor with ActorLogging {
         playlist
           .lift(index)
           .filter(_.ytHash == ytHash)
-          .foreach(_ => {
+          .foreach(_ =>
             playlist = playlist.take(index) ++ playlist.drop(index + 1)
-          })
+          )
 
       case unexpected => log.info("Unexpected message {}", unexpected)
     }
@@ -149,6 +153,29 @@ class RoomActor(roomName: String) extends PersistentActor with ActorLogging {
     )
 
     videoCounter = Some(vc)
+  }
+
+
+  def handleInitialState(sender: ActorRef): Unit = {
+    videoCounter
+      .filter(!_.cancellable.isCancelled)
+      .foreach(vc => {
+        val startSeconds = countCurrentVidTime()
+        sender ! UserActor.ToOut(Play(vc.vid, startSeconds))
+      })
+
+    for (vc <- videoCounter; pauseSeconds <- pausedAt) {
+      sender ! UserActor.ToOut(Play(vc.vid, pauseSeconds))
+      sender ! UserActor.ToOut(Pause)
+    }
+  }
+
+  def countCurrentVidTime(): Double = {
+    videoCounter.map(vc => {
+      val now = DateTime.now()
+      val sec = Seconds.secondsBetween(vc.startDateTime, now)
+      vc.startSeconds + sec.getSeconds
+    }).getOrElse(0)
   }
 
 }
