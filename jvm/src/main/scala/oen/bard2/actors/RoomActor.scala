@@ -11,7 +11,7 @@ import oen.bard2.actors.RoomActor._
 import oen.bard2.youtube.Video
 import org.joda.time.{DateTime, Seconds}
 
-import scala.concurrent.duration.{Duration, DurationInt, FiniteDuration}
+import scala.concurrent.duration.{Duration, DurationDouble, DurationInt, FiniteDuration}
 
 class RoomActor(roomName: String) extends PersistentActor with ActorLogging {
 
@@ -138,7 +138,7 @@ class RoomActor(roomName: String) extends PersistentActor with ActorLogging {
     videoCounter.foreach(_.cancellable.cancel())
 
     val playlistPosition = playlist(p.index)
-    val duration = Duration(playlistPosition.duration, concurrent.duration.SECONDS).plus(SYNCHRO_MARGIN)
+    val duration = Duration(playlistPosition.duration, concurrent.duration.SECONDS).plus(SYNCHRO_MARGIN).minus(p.startSeconds seconds)
 
     val ve = VideoEnded()
 
