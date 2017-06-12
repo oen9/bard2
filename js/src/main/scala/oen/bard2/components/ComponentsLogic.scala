@@ -3,6 +3,7 @@ package oen.bard2.components
 import oen.bard2.html.HtmlContent
 import oen.bard2.websock.WebsockConnector
 import oen.bard2.{AddToPlaylist, AjaxHelper, CreateRoom, Room}
+import org.scalajs.dom
 import org.scalajs.dom.{Event, KeyboardEvent, MouseEvent}
 
 class ComponentsLogic(staticComponents: StaticComponents,
@@ -18,6 +19,8 @@ class ComponentsLogic(staticComponents: StaticComponents,
 
     staticComponents.addToPlaylistInput.onkeydown = (e: KeyboardEvent) => if ("Enter" == e.key) addToPlaylist()
     staticComponents.addToPlaylistButton.onclick = (_: MouseEvent) => addToPlaylist()
+
+    activateHerokuKeepAlive()
   }
 
   protected def addRoom(): Unit = {
@@ -49,6 +52,11 @@ class ComponentsLogic(staticComponents: StaticComponents,
       websockConnector.send(atp)
       staticComponents.addToPlaylistInput.value = ""
     }
+  }
+
+  protected def activateHerokuKeepAlive(): Unit = {
+    val timeout15min = 15 * 60 * 1000
+    dom.window.setInterval(() => ajaxHelper.sendPing(), timeout15min)
   }
 
 }

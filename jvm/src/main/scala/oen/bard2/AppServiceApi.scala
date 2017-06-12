@@ -31,7 +31,8 @@ trait AppService {
   val routes: Route = getStatic ~
     getStaticDev ~
     roomsApi ~
-    websock
+    websock ~
+    ping
 
   def getStatic: Route = get {
     pathSingleSlash {
@@ -77,6 +78,10 @@ trait AppService {
     onSuccess(createUser(roomName)) (
       handleWebSocketMessages
     )
+  }
+
+  def ping: Route = path("ping") {
+    complete("pong")
   }
 
   protected def handleNewRoom(newRoomJson: String): Route = {

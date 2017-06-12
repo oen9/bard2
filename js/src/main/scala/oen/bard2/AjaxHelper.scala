@@ -28,4 +28,8 @@ class AjaxHelper(cacheData: CacheData) {
       }
     })
   }
+
+  def sendPing(): Unit = {
+    Ajax.get("/ping")
+  }
 }
