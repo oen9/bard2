@@ -1,13 +1,16 @@
 package oen.bard2
 
+import java.net.URLEncoder
+
 import akka.NotUsed
 import akka.actor.{ActorRef, ActorSystem, PoisonPill}
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
-import akka.http.scaladsl.model.{ContentTypes, HttpEntity}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpRequest}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.pattern._
-import akka.stream.OverflowStrategy
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings, OverflowStrategy}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.Timeout
 import oen.bard2.actors.{RoomsActor, UserActor}
@@ -26,13 +29,20 @@ trait AppService {
   implicit def system: ActorSystem
   def roomsActor: ActorRef
 
+  final implicit val materializer: ActorMaterializer = ActorMaterializer(ActorMaterializerSettings(system))
   implicit val timeout = Timeout(5.seconds)
+
+  val youtubeApiKey: String = system.settings.config.getString("youtube.api.key")
+  val ytSearchPrefix = s"https://www.googleapis.com/youtube/v3/search?part=snippet&key=$youtubeApiKey&type=video&maxResults=25"
+  val ytSearchByQueryUri = s"$ytSearchPrefix&q=%s"
+  val ytSearchByTokenUri = s"$ytSearchByQueryUri&pageToken=%s"
 
   val routes: Route = getStatic ~
     getStaticDev ~
     roomsApi ~
     websock ~
-    ping
+    ping ~
+    ytSearch
 
   def getStatic: Route = get {
     pathSingleSlash {
@@ -82,6 +92,33 @@ trait AppService {
 
   def ping: Route = path("ping") {
     complete("pong")
+  }
+
+  def ytSearch: Route = get {
+    pathPrefix("ytsearch") {
+      pathPrefix(Segment) { query =>
+        val encodedQuery = URLEncoder.encode(query, "UTF-8")
+        pathEnd {
+          val uri = ytSearchByQueryUri.format(encodedQuery)
+          redirectRequest(uri)
+        } ~
+        path(Segment) { token =>
+          val encodedToken = URLEncoder.encode(token, "UTF-8")
+          val uri = ytSearchByTokenUri.format(encodedQuery, encodedToken)
+          redirectRequest(uri)
+        }
+      }
+    }
+  }
+
+  protected def redirectRequest(uri: String): Route = {
+    onSuccess(Http(system).singleRequest(HttpRequest(uri = uri))) { response =>
+      val entity = response.entity
+      entity
+        .contentLengthOption
+        .map(length => complete(HttpEntity(entity.contentType, length, entity.dataBytes)))
+        .getOrElse(reject)
+    }
   }
 
   protected def handleNewRoom(newRoomJson: String): Route = {

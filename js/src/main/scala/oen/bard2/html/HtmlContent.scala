@@ -141,13 +141,16 @@ class HtmlContent(staticComponents: StaticComponents,
         ),
         div(cls := "col s12 m6 l6",
           div(cls := " grey lighten-4",
-            h4("add to playlist"),
             div(cls := "row",
+              h4("search"),
               div(cls := "col s12 m11 l11 input-field",
-                staticComponents.addToPlaylistInput,
-                label(`for` := "add_to_playlist", "yt hash")
+                staticComponents.ytSearchVideoInput,
+                label(`for` := "add_to_playlist", "query")
               ),
-              div(cls := "col s12 m1 l1", staticComponents.addToPlaylistButton)
+              div(cls := "col s12 m1 l1", staticComponents.ytSearchVideoButton)
+            ),
+            div(cls := "grey lighten-4",
+              staticComponents.ytSearchResult
             )
           )
         )

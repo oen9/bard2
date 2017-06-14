@@ -25,7 +25,7 @@ object Main {
     lazy val ajaxHelper = new AjaxHelper(cacheData)
     lazy val htmlContent = new HtmlContent(staticComponents, ajaxHelper, playerHelper, cacheData, websockConnector)
 
-    lazy val componentsLogic = new ComponentsLogic(staticComponents, cacheData, ajaxHelper, htmlContent, websockConnector)
+    lazy val componentsLogic = new ComponentsLogic(staticComponents, cacheData, ajaxHelper, htmlContent, websockConnector, htmlDresser)
 
     htmlContent.init(header, main, footer)
     componentsLogic.init()

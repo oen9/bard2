@@ -9,8 +9,9 @@ case class StaticComponents (
   newRoomButton: Anchor = a(cls := "btn-floating btn-large waves-effect waves-light", i(cls := "material-icons", "add_box")).render,
   roomSearchInput: Input = input(id := "search", `type` := "search").render,
 
-  addToPlaylistInput: Input = input(id := "add_to_playlist", `type` := "text").render,
-  addToPlaylistButton: Anchor = a(cls := "btn-floating btn-large waves-effect waves-light", i(cls := "material-icons", "playlist_add")).render,
+  ytSearchVideoInput: Input = input(id := "search_video", `type` := "text").render,
+  ytSearchVideoButton: Anchor = a(cls := "btn-floating btn-large waves-effect waves-light", i(cls := "material-icons", "search")).render,
+  ytSearchResult: Div = div(cls := "collection yt-search-result").render,
 
   playlist: Div = div(cls := "collection playlist").render,
 
