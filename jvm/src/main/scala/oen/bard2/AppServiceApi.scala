@@ -33,7 +33,7 @@ trait AppService {
   implicit val timeout = Timeout(5.seconds)
 
   val youtubeApiKey: String = system.settings.config.getString("youtube.api.key")
-  val ytSearchPrefix = s"https://www.googleapis.com/youtube/v3/search?part=snippet&key=$youtubeApiKey&type=video&maxResults=25"
+  val ytSearchPrefix = s"https://www.googleapis.com/youtube/v3/search?part=snippet&key=$youtubeApiKey&type=video&maxResults=5"
   val ytSearchByQueryUri = s"$ytSearchPrefix&q=%s"
   val ytSearchByTokenUri = s"$ytSearchByQueryUri&pageToken=%s"
 

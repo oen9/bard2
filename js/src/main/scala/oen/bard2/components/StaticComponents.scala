@@ -12,6 +12,8 @@ case class StaticComponents (
   ytSearchVideoInput: Input = input(id := "search_video", `type` := "text").render,
   ytSearchVideoButton: Anchor = a(cls := "btn-floating btn-large waves-effect waves-light", i(cls := "material-icons", "search")).render,
   ytSearchResult: Div = div(cls := "collection yt-search-result").render,
+  ytSearchPrevButton: Anchor = a(cls := "btn-floating btn-large waves-effect waves-light disabled", i(cls := "material-icons", "navigate_before")).render,
+  ytSearchNextButton: Anchor = a(cls := "btn-floating btn-large waves-effect waves-light disabled", i(cls := "material-icons", "navigate_next")).render,
 
   playlist: Div = div(cls := "collection playlist").render,
 

@@ -61,6 +61,8 @@ class HtmlContent(staticComponents: StaticComponents,
     val mainContent = initMain()
     main.appendChild(mainContent)
 
+    staticComponents.playlist.innerHTML = ""
+
     playerHelper.refreshPlayer()
     websockConnector.reConnect()
   }
@@ -148,6 +150,10 @@ class HtmlContent(staticComponents: StaticComponents,
                 label(`for` := "add_to_playlist", "query")
               ),
               div(cls := "col s12 m1 l1", staticComponents.ytSearchVideoButton)
+            ),
+            div(cls := "grey lighten-4",
+              staticComponents.ytSearchPrevButton,
+              staticComponents.ytSearchNextButton
             ),
             div(cls := "grey lighten-4",
               staticComponents.ytSearchResult

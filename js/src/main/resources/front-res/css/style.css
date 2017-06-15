@@ -34,9 +34,7 @@ main {
 }
 
 .yt-search-result {
-    min-height: 0vh;
-    max-height: 85vh;
-    overflow: auto;
+    min-height: 500px;
 }
 
 .page-footer {

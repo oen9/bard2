@@ -1,7 +1,7 @@
 package oen.bard2
 
 import oen.bard2.components.CacheData
-import oen.bard2.youtube.SearchResult
+import oen.bard2.youtube.{SearchResult, SearchResults}
 import org.scalajs.dom.ext.Ajax
 import org.scalajs.dom.raw.XMLHttpRequest
 
@@ -34,9 +34,26 @@ class AjaxHelper(cacheData: CacheData) {
     })
   }
 
-  def runYtSearch(query: String, f: Vector[SearchResult] => Unit): Unit = {
+  def runYtSearch(query: String, f: SearchResults => Unit): Unit = {
+    runYtSearch(query, None, f)
+  }
+
+  def runYtSearch(query: String, token: Option[String], f: SearchResults => Unit): Unit = {
     val encodedQuery = URIUtils.encodeURI(query)
-    Ajax.get("/ytsearch/" + encodedQuery).foreach(response => {
+    val baseUri = s"/ytsearch/$encodedQuery"
+
+    token match {
+      case Some(t) =>
+        val encodedToken = URIUtils.encodeURI(t)
+        executeYtSearch(s"$baseUri/$encodedToken", f)
+
+      case None =>
+        executeYtSearch(baseUri, f)
+    }
+  }
+
+  protected def executeYtSearch(query: String, f: SearchResults => Unit): Unit = {
+    Ajax.get(query).foreach(response => {
       val results = requestToSearchResult(response)
       f(results)
     })
@@ -46,15 +63,19 @@ class AjaxHelper(cacheData: CacheData) {
     Ajax.get("/ping")
   }
 
-  def requestToSearchResult(req: XMLHttpRequest): Vector[SearchResult] = {
+  protected def requestToSearchResult(req: XMLHttpRequest): SearchResults = {
     val json = js.JSON.parse(req.responseText)
-    println(req.responseText)
 
-    json.items.asInstanceOf[js.Array[js.Dynamic]].map(elem => {
+    val prevPageToken = if (js.isUndefined(json.prevPageToken)) None else Some(json.prevPageToken.toString)
+    val nextPageToken = if (js.isUndefined(json.nextPageToken)) None else Some(json.nextPageToken.toString)
+
+    val results = json.items.asInstanceOf[js.Array[js.Dynamic]].map(elem => {
       val title = elem.snippet.title.toString
       val thumbnail = elem.snippet.thumbnails.high.url.toString
       val videoId = elem.id.videoId.toString
       SearchResult(title, thumbnail, videoId)
     }).toVector
+
+    SearchResults(prevPageToken, nextPageToken, results)
   }
 }

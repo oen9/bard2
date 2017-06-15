@@ -65,9 +65,17 @@ class PlayerHelper(cacheData: CacheData) {
   }
 
   def pause() = handleReady(PauseCmd) {
-    for (p <- player if p.getPlayerState() != Player.State.PAUSED) {
-      p.pauseVideo()
-      ignorePlayEvent = true
+    try {
+      for (p <- player if p.getPlayerState() != Player.State.PAUSED) { // fastopt.js cause error when started page with pause
+        p.pauseVideo()
+        ignorePlayEvent = true
+      }
+    } catch {
+      case _: Throwable =>
+        for (p <- player) {
+          p.pauseVideo()
+          ignorePlayEvent = true
+        }
     }
   }
 

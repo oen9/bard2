@@ -2,9 +2,10 @@ package oen.bard2.components
 
 import oen.bard2.html.{HtmlContent, HtmlDresser}
 import oen.bard2.websock.WebsockConnector
+import oen.bard2.youtube.SearchResults
 import oen.bard2.{AjaxHelper, CreateRoom, Room}
 import org.scalajs.dom
-import org.scalajs.dom.html.Div
+import org.scalajs.dom.html.{Anchor, Div}
 import org.scalajs.dom.{Event, KeyboardEvent, MouseEvent}
 
 class ComponentsLogic(staticComponents: StaticComponents,
@@ -49,11 +50,40 @@ class ComponentsLogic(staticComponents: StaticComponents,
   protected def ytSearch(): Unit = {
     val query = staticComponents.ytSearchVideoInput.value
     if (!query.isEmpty) {
-      ajaxHelper.runYtSearch(query, results => {
-        val dressedResults = results.map(r => htmlDresser.dressYtSearchResult(r, websockConnector.send))
-        refreshYtSearch(dressedResults)
-      })
-      staticComponents.ytSearchVideoInput.value = ""
+      ytSearch(query)
+    } else {
+      staticComponents.ytSearchResult.innerHTML = ""
+    }
+  }
+
+  protected def ytSearch(query: String): Unit = {
+    ytSearch(query, ajaxHelper.runYtSearch(query, _))
+  }
+
+  protected def ytSearch(query: String, token: String): Unit = {
+    ytSearch(query, ajaxHelper.runYtSearch(query, Some(token), _))
+  }
+
+  protected def ytSearch(query: String, f: (SearchResults => Unit) => Unit): Unit = {
+    f(searchResults => {
+      val dressedResults = searchResults.results.map(r => htmlDresser.dressYtSearchResult(r, websockConnector.send))
+      refreshYtSearch(dressedResults)
+
+      confYtNavButton(query, searchResults.prevPageToken, staticComponents.ytSearchPrevButton)
+      confYtNavButton(query, searchResults.nextPageToken, staticComponents.ytSearchNextButton)
+    })
+    staticComponents.ytSearchVideoInput.value = ""
+    staticComponents.ytSearchResult.innerHTML = ""
+    staticComponents.ytSearchResult.appendChild(staticComponents.progressbar)
+  }
+
+  protected def confYtNavButton(query: String, token: Option[String], button: Anchor) = {
+    token match {
+      case Some(t) =>
+        button.onclick = (_: MouseEvent) => ytSearch(query, t)
+        button.classList.remove("disabled")
+      case None =>
+        button.classList.add("disabled")
     }
   }
 
