@@ -17,7 +17,7 @@ class MessageHandler(htmlDresser: HtmlDresser,
         refreshPlaylist(send)
 
       case DeleteFromPlaylist(ytHash, index) =>
-        for { p <- cacheData.playing if p.index == index } {
+        for (p <- cacheData.playing if p.index == index) {
           cacheData.playing = None
           playerHelper.stop()
         }
@@ -25,7 +25,7 @@ class MessageHandler(htmlDresser: HtmlDresser,
         refreshPlaylist(send)
 
       case pp: PlaylistPosition =>
-        val ppDressed = htmlDresser.dressPlaylistPosition(pp, cacheData.playlist.size, send)
+        val ppDressed = htmlDresser.dressPlaylistPosition(pp, cacheData.playlist.size, send, cacheData.playing)
         staticComponents.playlist.appendChild(ppDressed)
         cacheData.playlist = cacheData.playlist :+ pp
 
@@ -33,6 +33,7 @@ class MessageHandler(htmlDresser: HtmlDresser,
         cacheData.playlist.lift(index).foreach(p => {
           playerHelper.play(p.ytHash, startSeconds)
           cacheData.playing = Some(Playing(index))
+          refreshPlaylist(send)
         })
 
       case Pause =>
@@ -44,9 +45,20 @@ class MessageHandler(htmlDresser: HtmlDresser,
 
   protected def refreshPlaylist(send: Data => Unit) = {
     staticComponents.playlist.innerHTML = ""
-    cacheData.playlist
+    val playlistElements = cacheData.playlist
       .zipWithIndex
-      .map(pp => htmlDresser.dressPlaylistPosition(pp._1, pp._2, send))
-      .foreach(staticComponents.playlist.appendChild)
+      .map(pp => htmlDresser.dressPlaylistPosition(pp._1, pp._2, send, cacheData.playing))
+
+    playlistElements.foreach(staticComponents.playlist.appendChild)
+
+    cacheData.playing.foreach(p => {
+      val pElem = playlistElements(p.index)
+      val container = staticComponents.playlist
+
+      def isAbove = pElem.offsetTop + pElem.offsetHeight < container.scrollTop
+      def isBelow = pElem.offsetTop > container.offsetHeight + container.scrollTop
+
+      if (isAbove || isBelow) container.scrollTop = pElem.offsetTop
+    })
   }
 }

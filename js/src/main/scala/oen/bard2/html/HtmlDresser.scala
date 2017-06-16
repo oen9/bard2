@@ -2,13 +2,14 @@ package oen.bard2.html
 
 import oen.bard2.youtube.SearchResult
 import oen.bard2._
+import oen.bard2.components.Playing
 import org.scalajs.dom.html.Div
 import org.scalajs.dom.raw.MouseEvent
 
 import scalatags.JsDom.all._
 
 class HtmlDresser {
-  def dressPlaylistPosition(playlistPosition: PlaylistPosition, index: Int, send: Data => Unit): Div = {
+  def dressPlaylistPosition(playlistPosition: PlaylistPosition, index: Int, send: Data => Unit, playing: Option[Playing]): Div = {
 
     val playButton = a(cls := "btn-floating btn waves-effect waves-light", i(cls := "material-icons", "play_arrow")).render
     playButton.onclick = (_: MouseEvent) => send(Play(index))
@@ -19,7 +20,9 @@ class HtmlDresser {
       send(delete)
     }
 
-    div(cls := "collection-item valign-wrapper",
+    val colour = playing.filter(_.index == index).map(_ => "yellow lighten-5").getOrElse("")
+
+    div(cls := s"collection-item valign-wrapper $colour",
         div(cls := "col s3 m3 l3", deleteButton),
         div(cls := "col s3 m3 l3", img(cls := "yt-thumbnail", src := s"https://img.youtube.com/vi/${playlistPosition.ytHash}/hqdefault.jpg")),
         div(cls := "col s3 m3 l3", s"${playlistPosition.title} ${playlistPosition.duration}sec"),
