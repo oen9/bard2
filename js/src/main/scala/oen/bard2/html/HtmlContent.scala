@@ -55,16 +55,28 @@ class HtmlContent(staticComponents: StaticComponents,
   }
 
   protected def onHashChange(main: html.Element): Unit = {
+    resetState()
+
     readHash()
 
     main.innerHTML = ""
     val mainContent = initMain()
     main.appendChild(mainContent)
 
-    staticComponents.playlist.innerHTML = ""
-
     playerHelper.refreshPlayer()
     websockConnector.reConnect()
+  }
+
+  protected def resetState(): Unit = {
+    staticComponents.playlist.innerHTML = ""
+
+    staticComponents.ytSearchVideoInput.value = ""
+    staticComponents.newRoomInput.value = ""
+    staticComponents.roomSearchInput.value = ""
+
+    cacheData.playing = None
+    cacheData.playlist = Vector()
+    cacheData.roomName = None
   }
 
   protected def initHeader(): html.Element = {
