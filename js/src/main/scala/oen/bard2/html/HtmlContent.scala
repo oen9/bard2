@@ -73,6 +73,7 @@ class HtmlContent(staticComponents: StaticComponents,
     staticComponents.ytSearchVideoInput.value = ""
     staticComponents.newRoomInput.value = ""
     staticComponents.roomSearchInput.value = ""
+    staticComponents.roomDeleteButton.classList.add("disabled")
 
     cacheData.playing = None
     cacheData.playlist = Vector()
@@ -82,11 +83,21 @@ class HtmlContent(staticComponents: StaticComponents,
   protected def initHeader(): html.Element = {
     tags2.nav(
       div(cls := "nav-wrapper",
-        a(cls := "brand-logo right", href := "#", "bard2"),
+        div(cls := "modal", id := "room-deleted-modal",
+          div(cls := "modal-content grey-text text-darken-4",
+            h4(cls := "", "The room has been closed. Playlist isn't lost. You can re-create this room from main page")
+          ),
+          div(cls := "modal-footer",
+            staticComponents.roomDeletedBackButton
+          )
+        ),
+        ul(cls := "right",
+          li(a(cls := "brand-logo right waves-effect waves-light tooltipped", href := "#", attr("data-tooltip") := "home page",
+            "bard2",
+            a(cls := "material-icons", "list")))
+        ),
         ul(cls := "left",
-          li(i(cls := "material-icons right", "not_interested")),
-          li(i(cls := "material-icons right", "perm_contact_calendar")),
-          li(i(cls := "material-icons right", "power_settings_new"))
+          li(staticComponents.roomDeleteButton)
         )
       )
     ).render

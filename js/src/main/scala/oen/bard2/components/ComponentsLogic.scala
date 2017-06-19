@@ -1,9 +1,10 @@
 package oen.bard2.components
 
 import oen.bard2.html.{HtmlContent, HtmlDresser}
+import oen.bard2.materialize.JQueryHelper
 import oen.bard2.websock.WebsockConnector
 import oen.bard2.youtube.SearchResults
-import oen.bard2.{AjaxHelper, CreateRoom, Room}
+import oen.bard2.{AjaxHelper, CreateRoom, DeleteRoom, Room}
 import org.scalajs.dom
 import org.scalajs.dom.html.{Anchor, Div}
 import org.scalajs.dom.{Event, KeyboardEvent, MouseEvent}
@@ -13,17 +14,23 @@ class ComponentsLogic(staticComponents: StaticComponents,
                       ajaxHelper: AjaxHelper,
                       htmlContent: HtmlContent,
                       websockConnector: WebsockConnector,
-                      htmlDresser: HtmlDresser) {
+                      htmlDresser: HtmlDresser,
+                      jQueryHelper: JQueryHelper) {
 
   def init(): Unit = {
     staticComponents.newRoomInput.onkeydown = (e: KeyboardEvent) => if ("Enter" == e.key) addRoom()
     staticComponents.newRoomButton.onclick = (_: MouseEvent) => addRoom()
     staticComponents.roomSearchInput.onkeyup = (e: Event) => searchRoom()
 
+    staticComponents.roomDeletedBackButton.onclick = (_: MouseEvent) => jQueryHelper.closeRoomDeletedModal()
+
     staticComponents.ytSearchVideoInput.onkeydown = (e: KeyboardEvent) => if ("Enter" == e.key) ytSearch()
     staticComponents.ytSearchVideoButton.onclick = (_: MouseEvent) => ytSearch()
 
+    staticComponents.roomDeleteButton.onclick = (_: MouseEvent) => deleteRoom()
+
     activateHerokuKeepAlive()
+    jQueryHelper.initMaterialize()
   }
 
   protected def addRoom(): Unit = {
@@ -95,5 +102,11 @@ class ComponentsLogic(staticComponents: StaticComponents,
   protected def refreshYtSearch(elems: Vector[Div] = Vector()) = {
     staticComponents.ytSearchResult.innerHTML = ""
     elems.foreach(staticComponents.ytSearchResult.appendChild)
+  }
+
+  protected def deleteRoom(): Unit = {
+    cacheData.roomName.foreach(roomName => {
+      websockConnector.send(DeleteRoom(Room(roomName)))
+    })
   }
 }

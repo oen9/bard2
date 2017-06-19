@@ -4,17 +4,20 @@ import oen.bard2.components.{CacheData, Playing, StaticComponents}
 import oen.bard2.html.HtmlDresser
 import oen.bard2.youtube.PlayerHelper
 import oen.bard2._
+import oen.bard2.materialize.JQueryHelper
 
 class MessageHandler(htmlDresser: HtmlDresser,
                      staticComponents: StaticComponents,
                      playerHelper: PlayerHelper,
-                     cacheData: CacheData) {
+                     cacheData: CacheData,
+                     jQueryHelper: JQueryHelper) {
 
   def handle(data: Data, send: Data => Unit): Unit = {
     data match {
       case Playlist(playlist) =>
         cacheData.playlist = playlist
         refreshPlaylist(send)
+        staticComponents.roomDeleteButton.classList.remove("disabled")
 
       case DeleteFromPlaylist(ytHash, index) =>
         for (p <- cacheData.playing if p.index == index) {
@@ -38,6 +41,10 @@ class MessageHandler(htmlDresser: HtmlDresser,
 
       case Pause =>
         playerHelper.pause()
+
+      case _: DeleteRoom =>
+        playerHelper.pause()
+        jQueryHelper.openRoomDeletedModal()
 
       case unhandled => println(data) // TODO
     }

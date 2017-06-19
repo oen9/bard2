@@ -8,6 +8,13 @@ case class StaticComponents (
   newRoomInput: Input = input(id := "new_room_name", `type` := "text").render,
   newRoomButton: Anchor = a(cls := "btn-floating btn-large waves-effect waves-light", i(cls := "material-icons", "add_box")).render,
   roomSearchInput: Input = input(id := "search", `type` := "search").render,
+  roomDeleteButton: Anchor = a(
+    cls := "waves-effect waves-light btn-floating disabled tooltipped",
+    attr("data-tooltip") := "delete room",
+    i(cls := "material-icons", "delete_forever")
+  ).render,
+
+  roomDeletedBackButton: Anchor = a(cls := "btn-large waves-effect waves-light", href := "#", "back to main page").render,
 
   ytSearchVideoInput: Input = input(id := "search_video", `type` := "text").render,
   ytSearchVideoButton: Anchor = a(cls := "btn-floating btn-large waves-effect waves-light", i(cls := "material-icons", "search")).render,

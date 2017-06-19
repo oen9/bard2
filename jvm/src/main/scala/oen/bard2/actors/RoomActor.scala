@@ -79,6 +79,10 @@ class RoomActor(roomName: String) extends PersistentActor with ActorLogging {
     case Terminated(terminated) =>
       users = users - terminated
 
+    case msg: DeleteRoom =>
+      users.foreach(_ ! UserActor.ToOut(msg))
+      context.stop(self)
+
     case e =>
       log.info(e.toString)  // TODO
   }
@@ -154,7 +158,6 @@ class RoomActor(roomName: String) extends PersistentActor with ActorLogging {
 
     videoCounter = Some(vc)
   }
-
 
   def handleInitialState(sender: ActorRef): Unit = {
     videoCounter

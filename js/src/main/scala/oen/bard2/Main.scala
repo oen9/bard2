@@ -2,6 +2,7 @@ package oen.bard2
 
 import oen.bard2.components.{CacheData, ComponentsLogic, StaticComponents}
 import oen.bard2.html.{HtmlContent, HtmlDresser}
+import oen.bard2.materialize.JQueryHelper
 import oen.bard2.websock.{MessageHandler, WebsockConnector}
 import oen.bard2.youtube.PlayerHelper
 import org.scalajs.dom.html.Element
@@ -16,16 +17,17 @@ object Main {
     lazy val staticComponents = StaticComponents()
     lazy val cacheData = new CacheData
     lazy val playerHelper = new PlayerHelper(cacheData)
+    lazy val jQueryHelper = new JQueryHelper
 
     lazy val htmlDresser = new HtmlDresser
-    lazy val messageHandler = new MessageHandler(htmlDresser, staticComponents, playerHelper, cacheData)
+    lazy val messageHandler = new MessageHandler(htmlDresser, staticComponents, playerHelper, cacheData, jQueryHelper)
     lazy val websockConnector = new WebsockConnector(cacheData, messageHandler)
     playerHelper.send = Some(websockConnector.send)
 
     lazy val ajaxHelper = new AjaxHelper(cacheData)
     lazy val htmlContent = new HtmlContent(staticComponents, ajaxHelper, playerHelper, cacheData, websockConnector)
 
-    lazy val componentsLogic = new ComponentsLogic(staticComponents, cacheData, ajaxHelper, htmlContent, websockConnector, htmlDresser)
+    lazy val componentsLogic = new ComponentsLogic(staticComponents, cacheData, ajaxHelper, htmlContent, websockConnector, htmlDresser, jQueryHelper)
 
     htmlContent.init(header, main, footer)
     componentsLogic.init()

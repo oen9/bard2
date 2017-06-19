@@ -1,4 +1,4 @@
-val akkaVersion = "2.5.1"
+val akkaVersion = "2.5.3"
 
 val app = crossProject.in(file(".")).settings(
   unmanagedSourceDirectories in Compile += baseDirectory.value  / "shared" / "main" / "scala",
@@ -15,7 +15,7 @@ val app = crossProject.in(file(".")).settings(
   )
 ).jvmSettings(
   libraryDependencies ++= Seq(
-    "com.typesafe.akka" %% "akka-http" % "10.0.6",
+    "com.typesafe.akka" %% "akka-http" % "10.0.7",
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
     "com.typesafe.akka" %% "akka-stream" % akkaVersion,
     "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
