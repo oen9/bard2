@@ -1,4 +1,5 @@
 val akkaVersion = "2.5.3"
+val akkaHttpVersion = "10.0.8"
 
 val app = crossProject.in(file(".")).settings(
   unmanagedSourceDirectories in Compile += baseDirectory.value  / "shared" / "main" / "scala",
@@ -15,13 +16,13 @@ val app = crossProject.in(file(".")).settings(
   )
 ).jvmSettings(
   libraryDependencies ++= Seq(
-    "com.typesafe.akka" %% "akka-http" % "10.0.7",
+    "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
     "com.typesafe.akka" %% "akka-stream" % akkaVersion,
     "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
     "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
 
-    "com.typesafe.akka" %% "akka-http-spray-json" % "10.0.7",
+    "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
 
     "com.github.romix.akka" %% "akka-kryo-serialization" % "0.5.2",
 
