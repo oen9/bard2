@@ -6,10 +6,11 @@ import oen.bard2.youtube._
 import oen.bard2.{AjaxHelper, JsUtils, Room}
 import org.scalajs.dom
 import org.scalajs.dom.html
-import org.scalajs.dom.raw.{HashChangeEvent, MouseEvent}
-
+import org.scalajs.dom.raw.HashChangeEvent
 import scalatags.JsDom.all._
 import scalatags.JsDom.tags2
+
+import scala.scalajs.js.URIUtils
 
 class HtmlContent(staticComponents: StaticComponents,
                   ajaxHelper: AjaxHelper,
@@ -50,7 +51,7 @@ class HtmlContent(staticComponents: StaticComponents,
 
   protected def readHash(): Option[String] = {
     val hash = dom.window.location.hash
-    cacheData.roomName = if (hash.isEmpty) None else Some(hash.substring(1))
+    cacheData.roomName = if (hash.isEmpty) None else Some(URIUtils.decodeURI(hash.substring(1)))
     cacheData.roomName
   }
 

@@ -7,7 +7,7 @@ val app = crossProject.in(file(".")).settings(
     "com.lihaoyi" %%% "scalatags" % "0.6.5",
     "com.lihaoyi" %%% "upickle" % "0.4.4"
   ),
-  scalaVersion := "2.12.2",
+  scalaVersion := "2.12.3",
   name := "bard2"
 ).jsSettings(
   libraryDependencies ++= Seq(
