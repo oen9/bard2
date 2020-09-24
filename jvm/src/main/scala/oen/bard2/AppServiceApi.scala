@@ -112,13 +112,7 @@ trait AppService {
   }
 
   protected def redirectRequest(uri: String): Route = {
-    onSuccess(Http(system).singleRequest(HttpRequest(uri = uri))) { response =>
-      val entity = response.entity
-      entity
-        .contentLengthOption
-        .map(length => complete(HttpEntity(entity.contentType, length, entity.dataBytes)))
-        .getOrElse(reject)
-    }
+    onSuccess(Http(system).singleRequest(HttpRequest(uri = uri))) { response => complete(response) }
   }
 
   protected def handleNewRoom(newRoomJson: String): Route = {
